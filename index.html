@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>منظومة الأسئلة الاحترافية - تحكم كامل</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@700&family=Lateef&family=Reem+Kufi:wght@700&family=Tajawal:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --main-font-size: 20px; --selected-font: 'Amiri', serif; }
+        body { font-family: var(--selected-font); background-color: #f0f2f5; padding: 20px; margin: 0; }
+        
+        .control-panel {
+            background: #2c3e50; color: white; padding: 15px; margin-bottom: 20px; border-radius: 12px;
+            display: flex; gap: 20px; align-items: center; justify-content: center;
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-wrap: wrap;
+        }
+        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-add { background: #27ae60; color: white; }
+        .btn-print { background: #e74c3c; color: white; }
+        .btn-delete { background: #ff5252; color: white; font-size: 12px; margin-right: 10px; }
+
+        .exam-paper {
+            background-color: white; width: 210mm; min-height: 297mm;
+            margin: 0 auto; padding: 30px; border: 3px solid #000;
+            display: flex; flex-direction: column; box-sizing: border-box;
+        }
+
+        .header-section {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            border-bottom: 4px double #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            align-items: start;
+        }
+
+        .header-item { display: flex; flex-direction: column; gap: 8px; }
+        .header-item.right { text-align: right; }
+        .header-item.center { text-align: center; }
+
+        .left-header-table {
+            border-collapse: collapse;
+            margin-right: auto;
+            margin-left: 35px; 
+        }
+        .left-header-table td { padding: 3px 0; white-space: nowrap; text-align: right; font-weight: bold; }
+
+        .editable-content { font-weight: bold; font-size: var(--main-font-size); }
+
+        input[type="text"], textarea, select {
+            border: none; font-family: inherit; font-weight: bold;
+            font-size: inherit; background: transparent; padding: 2px;
+            color: black; outline: none;
+        }
+        textarea { 
+            width: 100%; 
+            height: auto; 
+            resize: none; 
+            overflow: hidden; 
+            line-height: 1.5;
+            margin-top: 2px; /* تقريب النص من رأس السؤال */
+        }
+        input:focus, textarea:focus { background-color: #fff9c4; border-radius: 4px; }
+
+        .question-wrapper { margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .question-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; }
+        
+        .q-header { display: flex; gap: 5px; align-items: center; min-width: 140px; }
+        .q-name-select { border: 1px solid #ddd; font-size: 0.9em; background: #fff; padding: 2px; border-radius: 4px; }
+        
+        .degree-tag { min-width: 110px; text-align: left; }
+
+        .footer-signatures {
+            margin-top: 25px; 
+            display: flex;
+            justify-content: space-between;
+            padding-top: 10px;
+        }
+        .sig-item { width: 30%; text-align: center; }
+        .sig-item input { text-align: center; border-bottom: 1px dotted #000 !important; width: 100%; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .exam-paper { border: 3px solid #000; width: 100%; margin: 0; padding: 12mm; height: 100vh; overflow: hidden; }
+            select { border: none; appearance: none; -webkit-appearance: none; background: transparent; font-weight: bold; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel no-print">
+        <div>
+            <label>الخط: </label>
+            <select onchange="updateFont(this.value)">
+                <option value="'Amiri', serif">أميري</option>
+                <option value="'Cairo', sans-serif">كايرو</option>
+                <option value="'Tajawal', sans-serif">تجول</option>
+                <option value="'Reem Kufi', sans-serif">ريم كوفي</option>
+            </select>
+        </div>
+        <div>
+            <label>الحجم: </label>
+            <input type="range" min="14" max="28" value="20" oninput="updateFontSize(this.value)">
+        </div>
+        <button class="btn btn-add" onclick="addNewQuestion()">➕ إضافة سؤال</button>
+        <button class="btn btn-print" onclick="window.print()">🖨️ طباعة</button>
+    </div>
+
+    <div class="exam-paper">
+        <div class="header-section">
+            <div class="header-item right">
+                <span>مدرسة: <input type="text" value="الياسري الابتدائية" style="width:140px"></span>
+                <span>الدور: <select><option>الأول</option><option selected>الثاني</option><option>الثالث</option></select></span>
+            </div>
+            
+            <div class="header-item center">
+                <span>بسم الله الرحمن الرحيم</span>
+                <input type="text" style="text-align:center; font-size: 1.1em;" value="امتحانات نهاية السنة">
+                <input type="text" style="text-align:center;" value="العام الدراسي 2025 / 2026">
+            </div>
+
+            <div class="header-item left">
+                <table class="left-header-table">
+                    <tr><td>الصف:</td><td><select style="width:120px"><option selected>الخامس الابتدائي</option><option>السادس الابتدائي</option></select></td></tr>
+                    <tr><td>المادة:</td><td><input type="text" value="اللغة العربية" style="width:120px"></td></tr>
+                    <tr><td>الوقت:</td><td><select style="width:120px"><option selected>ساعة ونصف</option><option>ساعتان</option></select></td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="editable-content" id="questions-list"></div>
+
+        <p style="text-align:center; font-weight:bold; margin-top: 15px;">مع تمنياتنا لكم بالنجاح والتوفيق</p>
+
+        <div class="footer-signatures">
+            <div class="sig-item"><input type="text" value="عضو اللجنة"></div>
+            <div class="sig-item"><input type="text" value="عضو اللجنة"></div>
+            <div class="sig-item"><input type="text" value="عضو اللجنة"></div>
+        </div>
+    </div>
+
+    <script>
+        function updateFontSize(val) { document.documentElement.style.setProperty('--main-font-size', val + 'px'); }
+        function updateFont(font) { document.documentElement.style.setProperty('--selected-font', font); }
+        function autoHeight(elem) { elem.style.height = "1px"; elem.style.height = (elem.scrollHeight) + "px"; }
+
+        function generateQuestionOptions() {
+            let options = `<option value="التعبير //">التعبير //</option>`;
+            const letters = ['أ', 'ب', 'ج', 'د'];
+            for (let i = 1; i <= 7; i++) {
+                for (let l of letters) {
+                    let val = `س${i}/ ${l}/`;
+                    options += `<option value="${val}">${val}</option>`;
+                }
+            }
+            options += `<option value="custom">مخصص..</option>`;
+            return options;
+        }
+
+        function fillDegrees(selectElement) {
+            const def = selectElement.getAttribute('data-def') || 10;
+            for (let i = 1; i <= 50; i++) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.innerHTML = i + " درجات";
+                if (i == def) opt.selected = true;
+                selectElement.appendChild(opt);
+            }
+        }
+
+        function addNewQuestion(defaultText = "") {
+            const container = document.getElementById('questions-list');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'question-wrapper';
+            wrapper.innerHTML = `
+                <div class="question-row">
+                    <div class="q-header">
+                        <select class="q-name-select">${generateQuestionOptions()}</select>
+                    </div>
+                    <textarea oninput="autoHeight(this)" placeholder="كتابة سؤال هنا">${defaultText}</textarea>
+                    <div class="degree-tag">( <select class="degree-gen"></select> )</div>
+                    <button class="btn btn-delete no-print" onclick="this.closest('.question-wrapper').remove()">حذف</button>
+                </div>`;
+            container.appendChild(wrapper);
+            fillDegrees(wrapper.querySelector('.degree-gen'));
+            autoHeight(wrapper.querySelector('textarea'));
+        }
+
+        window.onload = () => {
+            // إضافة السؤال الأول تلقائياً مع نص تجريبي قابل للتعديل
+            addNewQuestion("اكتب في أحد الموضوعين : 1- حادث أفزعني 2- تهنئة النجاح");
+            document.querySelectorAll('.degree-gen').forEach(fillDegrees);
+        };
+    </script>
+</body>
+</html>
+('m3').value;
+        document.getElementById('vCommTable').style.display = document.getElementById('m1').value ? 'table' : 'none';
+
+        document.documentElement.style.setProperty('--q-font', document.getElementById('fontFamily').value);
+        document.documentElement.style.setProperty('--q-size', document.getElementById('fontSize').value + 'px');
+    }
+
+    function toHi(num) {
+        if(document.getElementById('numType').value === 'ar') return num;
+        return num.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    }
+
+    function addQuestion() {
+        const text = document.getElementById('qInput').value;
+        if(!text) return;
+        questions.push({
+            text: text,
+            mark: document.getElementById('qMark').value || '0',
+            branches: document.getElementById('brInput').value.split('\n').filter(b => b.trim() !== '')
+        });
+        clearInputs();
+        render();
+    }
+
+    function render() {
+        const area = document.getElementById('questionsArea');
+        const sep = document.getElementById('sepType').value;
+        area.innerHTML = '';
+        
+        questions.forEach((q, i) => {
+            let branches = q.branches.map((b, idx) => ` ${arabicLetters[idx] || '..'} / ${b}`).join(' /');
+            let fullQ = `س${toHi(i+1)}/ ${q.text}` + (branches ? ` / ${branches}` : '');
+            
+            area.innerHTML += `
+                <div class="q-row">
+                    <div class="edit-tools">
+                        <button class="btn-edit" onclick="editQ(${i})">تعديل</button>
+                        <button class="btn-edit" style="background:red" onclick="questions.splice(${i},1);render()">حذف</button>
+                    </div>
+                    <div class="grade-box">${toHi(q.mark)} درجة</div>
+                    <div class="q-content">${fullQ}</div>
+                    <div style="border-bottom: ${sep==='none'?'0':(sep==='solid'?'1px solid #000':(sep==='dashed'?'1px dashed #000':'2px dotted #000'))}; margin-top:10px;"></div>
+                </div>`;
+        });
+        if(window.MathJax) MathJax.typeset();
+    }
+
+    function editQ(i) {
+        editIdx = i;
+        document.getElementById('qInput').value = questions[i].text;
+        document.getElementById('qMark').value = questions[i].mark;
+        document.getElementById('brInput').value = questions[i].branches.join('\n');
+        document.getElementById('addBtn').style.display='none';
+        document.getElementById('saveBtn').style.display='block';
+    }
+
+    function saveEdit() {
+        questions[editIdx] = {
+            text: document.getElementById('qInput').value,
+            mark: document.getElementById('qMark').value,
+            branches: document.getElementById('brInput').value.split('\n').filter(b => b.trim() !== '')
+        };
+        editIdx = -1;
+        document.getElementById('addBtn').style.display='block';
+        document.getElementById('saveBtn').style.display='none';
+        clearInputs();
+        render();
+    }
+
+    function clearInputs() {
+        document.getElementById('qInput').value = '';
+        document.getElementById('qMark').value = '';
+        document.getElementById('brInput').value = '';
+    }
+
+    function exportWord() {
+        const content = document.getElementById('examPaper').innerHTML;
+        const blob = new Blob(['\ufeff', `<html><head><meta charset="utf-8"><style>body{direction:rtl; text-align:right; font-family:'Times New Roman';} table{width:100%; border-collapse:collapse;} .grade-box{border:1px solid #000; width:60pt; float:left; text-align:center;}</style></head><body>${content}</body></html>`], {type:'application/msword'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'Exam_V20.doc'; a.click();
+    }
+</script>
+</body>
+</html>
